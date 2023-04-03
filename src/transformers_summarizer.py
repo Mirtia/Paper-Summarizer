@@ -4,7 +4,19 @@ from converter import PDFToTextConverter
 
 
 class PDFSummarizer(PDFToTextConverter):
+    """
+    A PDF summarizer that uses BigBirdPegasusForConditionalGeneration from Hugging Face's Transformers library to generate summaries.
 
+    Args:
+        filename (str): The name of the PDF file to summarize.
+        model (str): The name or path of the pre-trained BigBirdPegasus model to use.
+
+    Attributes:
+        CHUNK_SIZE (int): The chunk size to use when processing the PDF file. Defaults to 4096.
+        MAX_LENGTH (int): The maximum length of the summary. Defaults to 100.
+        tokenizer: The tokenizer to use for encoding the text. Initialized in __init__().
+        model: The pre-trained BigBirdPegasus model to use for generating the summaries. Initialized in __init__().
+    """
     CHUNK_SIZE = 4096
     MAX_LENGTH = 100
 

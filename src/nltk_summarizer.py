@@ -11,6 +11,17 @@ from converter import PDFToTextConverter
 
 
 class PDFSummarizer(PDFToTextConverter):
+    """
+    PDFSummarizer is a class that summarizes PDF documents. It uses the NLTK and Transformers libraries to tokenize and filter sentences and words in the text, and to generate a summary of the document.
+
+    The class inherits from PDFToTextConverter, which is a class that converts PDF files to text. The summarized text can be exported to a file using the export() method.
+
+    Attributes:
+        CHUNK_SIZE (int): The size of the text chunks to be processed concurrently. Default is 4096.
+        MAX_LENGTH (int): The maximum length of the generated summary. Default is 100.
+        MIN_LENGTH (int): The minimum length of the generated summary. Default is 30.
+        NUM_SENTENCES (int): The number of sentences to include in the summary. Default is 50.
+    """
     CHUNK_SIZE = 4096
     MAX_LENGTH = 100
     MIN_LENGTH = 30
