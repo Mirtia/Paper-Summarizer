@@ -132,7 +132,6 @@ class PDFSummarizer(PDFToTextConverter):
                 sorted(scores, key=scores.get,
                        reverse=True)[:self.NUM_SENTENCES]), self.CHUNK_SIZE)
 
-        self.summary = ""
         with ThreadPoolExecutor() as executor:
             futures = list(
                 executor.map(self._summarize_chunk, raw_summary_chunks))

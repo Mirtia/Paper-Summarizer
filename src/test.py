@@ -24,8 +24,6 @@ def main():
 
     args = parser.parse_args()
 
-
-    converter_PDF = converter.PDFToTextConverter(args.file)
     if args.mode == "ntlk":
         summarizer_NTLK = nltk_summarizer.PDFSummarizer(args.file)
         summarizer_NTLK.summarize()
