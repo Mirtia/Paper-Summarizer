@@ -159,6 +159,3 @@ class PDFSummarizer(PDFToTextConverter):
     def export(self, filename: str) -> None:
         with open(filename, mode="w", encoding="utf-8") as f:
             f.write(self.summary)
-
-    def extract_keypoints(self) -> None:
-        pass

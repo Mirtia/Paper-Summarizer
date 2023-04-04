@@ -1,7 +1,7 @@
 import argparse
 import nltk_summarizer
 import transformers_summarizer
-import converter
+import sumy_summarizer
 
 def main():
     parser = argparse.ArgumentParser(description='Get input .pdf')
@@ -28,11 +28,14 @@ def main():
         summarizer_NTLK = nltk_summarizer.PDFSummarizer(args.file)
         summarizer_NTLK.summarize()
         summarizer_NTLK.export(args.output)
-    # elif args.mode == "pegasus":
-    #     summarizer_pegasus = transformers_summarizer.PDFSummarizer(args.file)
-    #     summarizer_pegasus.summarize()
-    #     summarizer_pegasus.export(args.output)
-
+    elif args.mode == "pegasus":
+        summarizer_pegasus = transformers_summarizer.PDFSummarizer(args.file)
+        summarizer_pegasus.summarize()
+        summarizer_pegasus.export(args.output)
+    elif args.mode == "sumy":
+        summarizer_sumy = sumy_summarizer.PDFSummarizer(args.file)
+        summarizer_sumy.summarize()
+        summarizer_sumy.export(args.output)
 
 if __name__ == "__main__":
     main()

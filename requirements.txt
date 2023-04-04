@@ -1,4 +1,5 @@
-nltk
-pypdf
+nltk==3.6.7
+pyenchant==3.2.2
+pypdf==3.7.0
 transformers
-torch
+wordninja==2.0.0
