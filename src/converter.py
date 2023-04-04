@@ -29,5 +29,5 @@ class PDFToTextConverter:
             reader = pypdf.PdfReader(f)
             writer = pypdf.PdfWriter(clone_from=reader)
             writer.remove_annotations(subtypes=None)
-        return "".join(page.extract_text().replace("-", "").replace("\n", "")
+        return " ".join(page.extract_text().replace("-", "")
                        for page in writer.pages)

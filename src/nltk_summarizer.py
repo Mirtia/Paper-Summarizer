@@ -23,18 +23,18 @@ class PDFSummarizer(PDFToTextConverter):
         NUM_SENTENCES (int): The number of sentences to include in the summary. Default is 50.
     """
     CHUNK_SIZE = 4096
-    MAX_LENGTH = 100
+    MAX_LENGTH = 80
     MIN_LENGTH = 30
-    NUM_SENTENCES = 50
+    NUM_SENTENCES = 20
 
-    def __init__(self, filename):
+    def __init__(self, filename: str) -> None:
         super().__init__(filename)
         self._download()
         self.stop_words = set(stopwords.words("english"))
         self.chunks = PDFSummarizer.split_text(self.text, self.CHUNK_SIZE)
-        self.summarizer = pipeline(task="summarization")
+        self.summarizer = pipeline(task="summarization", model="sshleifer/distilbart-cnn-12-6")
 
-    def _download(self):
+    def _download(self) -> None:
         nltk.download("punkt")
         nltk.download("stopwords")
         nltk.download("averaged_perceptron_tagger")
@@ -42,12 +42,12 @@ class PDFSummarizer(PDFToTextConverter):
         nltk.download("words")
 
     @staticmethod
-    def split_text(text, chunk_size):
+    def split_text(text: str, chunk_size: int) -> list:
         return [
             text[i:i + chunk_size] for i in range(0, len(text), chunk_size)
         ]
 
-    def process_concurrently(self, tokens, num_threads, operation):
+    def process_concurrently(self, tokens: list, num_threads: int, operation) -> None:
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
             futures = []
             for i in range(num_threads):
@@ -59,24 +59,24 @@ class PDFSummarizer(PDFToTextConverter):
             ]
 
     @staticmethod
-    def tokenize_lines(chunks):
+    def tokenize_lines(chunks: list) -> list:
         return [token for chunk in chunks for token in sent_tokenize(chunk)]
 
     @staticmethod
-    def tokenize_words(chunks):
+    def tokenize_words(chunks: list) -> list:
         return [token for chunk in chunks for token in word_tokenize(chunk)]
 
     @staticmethod
-    def filter_lines(chunks):
+    def filter_lines(chunks: list) -> list:
         return [line for line in chunks if len(line) > 1]
 
-    def filter_words(self, chunks):
+    def filter_words(self, chunks: list) -> list:
         return [
             word for word in chunks
             if word not in self.stop_words and len(word) > 1
         ]
 
-    def summarize(self, quiet=False):
+    def summarize(self, quiet=False) -> None:
         self.sentences = self.process_concurrently(
             self.chunks, num_threads=4, operation=PDFSummarizer.tokenize_lines)
         self.words = self.process_concurrently(
@@ -118,12 +118,14 @@ class PDFSummarizer(PDFToTextConverter):
                        reverse=True)[:self.NUM_SENTENCES]), self.CHUNK_SIZE)
 
         self.summary = ""
-        for chunk in raw_summary_chunks:
+        for i, chunk in enumerate(raw_summary_chunks):
+            if not quiet:
+                print(f"Processing chunk {i + 1}/{len(raw_summary_chunks)}...")
             self.summary += self.summarizer(chunk,
                                             max_length=self.MAX_LENGTH,
                                             min_length=self.MIN_LENGTH,
-                                            do_sample=False)[0]['summary_text']
+                                            do_sample=True)[0]['summary_text']
 
-    def export(self, filename) -> None:
+    def export(self, filename: str) -> None:
         with open(filename, mode="w", encoding="utf-8") as f:
             f.write(self.summary)

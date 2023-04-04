@@ -20,19 +20,19 @@ class PDFSummarizer(PDFToTextConverter):
     CHUNK_SIZE = 4096
     MAX_LENGTH = 100
 
-    def __init__(self, filename, model="google/bigbird-pegasus-large-arxiv"):
+    def __init__(self, filename: str, model="google/bigbird-pegasus-large-arxiv") -> None:
         super().__init__(filename)
         self.tokenizer = AutoTokenizer.from_pretrained(model)
         self.model = BigBirdPegasusForConditionalGeneration.from_pretrained(
             model)
 
-    def _split_text(self):
+    def _split_text(self) -> None:
         self.chunks = [
             self.text[i:i + self.CHUNK_SIZE]
             for i in range(0, len(self.text), self.CHUNK_SIZE)
         ]
 
-    def summarize(self, quiet=False):
+    def summarize(self, quiet=False) -> None:
         self._split_text()
         self.summary = ""
         for i, chunk in enumerate(self.chunks):
@@ -49,6 +49,6 @@ class PDFSummarizer(PDFToTextConverter):
             self.summary += self.tokenizer.decode(summary_ids[0],
                                                   skip_special_tokens=True)
 
-    def export(self, filename) -> None:
+    def export(self, filename: str) -> None:
         with open(filename, mode="w", encoding="utf-8") as f:
             f.write(self.summary)
