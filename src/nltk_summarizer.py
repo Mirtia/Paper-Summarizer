@@ -1,6 +1,8 @@
 import re
 from concurrent.futures import ThreadPoolExecutor
 from itertools import islice
+import wordninja
+import enchant
 
 import nltk
 from nltk import FreqDist
@@ -33,13 +35,9 @@ class PDFSummarizer(PDFToTextConverter):
         self._download()
         self.stop_words = set(stopwords.words("english"))
         self.text = self._sanitize(self.text)
-        self.custom_stop_words = self._import_stop_words()
         self.chunks = PDFSummarizer.split_text(self.text, self.CHUNK_SIZE)
         self.summarizer = pipeline(task="summarization",
                                    model="sshleifer/distilbart-cnn-12-6")
-
-    def _import_stop_words(self, filename=None):
-        pass
 
     def _sanitize(self, text):
         return re.sub(r"\[\d+\]", "",
@@ -72,7 +70,6 @@ class PDFSummarizer(PDFToTextConverter):
 
     @staticmethod
     def tokenize_sentences(chunks: list) -> list:
-        # Remove sentences with Fig or Figure, Table, Tab
         return [token for chunk in chunks for token in sent_tokenize(chunk)]
 
     @staticmethod
@@ -81,7 +78,10 @@ class PDFSummarizer(PDFToTextConverter):
 
     @staticmethod
     def filter_sentences(chunks: list) -> list:
-        return [line for line in chunks if len(line) > 1]
+        return [
+            token for token in chunks if len(token) > 1 and not any(
+                word in token for word in {"Figure", "Fig", "Tab", "Table"})
+        ]
 
     def filter_words(self, chunks: list) -> list:
         return [
@@ -126,9 +126,8 @@ class PDFSummarizer(PDFToTextConverter):
             scores[sentence] = sentence_score
 
         self.CHUNK_SIZE = 1024
-
         raw_summary_chunks = PDFSummarizer.split_text(
-            " ".join(
+            "".join(
                 sorted(scores, key=scores.get,
                        reverse=True)[:self.NUM_SENTENCES]), self.CHUNK_SIZE)
 
@@ -136,6 +135,7 @@ class PDFSummarizer(PDFToTextConverter):
             futures = list(
                 executor.map(self._summarize_chunk, raw_summary_chunks))
             self.summary = "".join(futures)
+            self._correct_summary()
 
     def _summarize_chunk(self, chunk) -> str:
         return self.summarizer(chunk,
@@ -143,6 +143,22 @@ class PDFSummarizer(PDFToTextConverter):
                                min_length=self.MIN_LENGTH,
                                do_sample=True)[0]["summary_text"]
 
+    def _correct_summary(self) -> None:
+        eng_dict = enchant.Dict("en_US")
+        words = word_tokenize(self.summary)
+        clean_summary = []
+        for word in words:
+            split_words = wordninja.split(word)
+            if len(word) > 5 and not eng_dict.check(word) and all(
+                    eng_dict.check(w) for w in split_words):
+                clean_summary.extend(split_words)
+            else:
+                clean_summary.append(word)
+        self.summary = re.sub("\s+", " ", " ".join(clean_summary)).strip()
+
     def export(self, filename: str) -> None:
         with open(filename, mode="w", encoding="utf-8") as f:
             f.write(self.summary)
+
+    def extract_keypoints(self) -> None:
+        pass

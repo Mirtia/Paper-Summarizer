@@ -2,6 +2,7 @@ import os
 import pypdf
 import re
 
+
 class PDFToTextConverter:
     """
     A class that converts .pdf files to .txt files.
@@ -26,9 +27,12 @@ class PDFToTextConverter:
     def _read_file(self, filename: str) -> str:
         self._validate_file(filename)
         with open(filename, mode="rb") as f:
-            writer = pypdf.PdfWriter(clone_from=f)
+            reader = pypdf.PdfReader(f)
+            writer = pypdf.PdfWriter(clone_from=reader)
+            writer.remove_annotations(subtypes=None)
+
         return " ".join(page.extract_text().replace("-", "")
-                       for page in writer.pages)
+                        for page in writer.pages)
 
     def export(self, filename: str) -> None:
         with open(filename, mode="w", encoding="utf-8") as f:

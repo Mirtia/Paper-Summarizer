@@ -28,10 +28,10 @@ def main():
         summarizer_NTLK = nltk_summarizer.PDFSummarizer(args.file)
         summarizer_NTLK.summarize()
         summarizer_NTLK.export(args.output)
-    elif args.mode == "pegasus":
-        summarizer_pegasus = transformers_summarizer.PDFSummarizer(args.file)
-        summarizer_pegasus.summarize()
-        summarizer_pegasus.export(args.output)
+    # elif args.mode == "pegasus":
+    #     summarizer_pegasus = transformers_summarizer.PDFSummarizer(args.file)
+    #     summarizer_pegasus.summarize()
+    #     summarizer_pegasus.export(args.output)
 
 
 if __name__ == "__main__":
