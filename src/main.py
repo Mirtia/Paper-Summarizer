@@ -18,13 +18,13 @@ def main():
     parser.add_argument('-m',
                         '--mode',
                         type=str,
-                        help='the mode of summarization\n -pegasus\n -nltk\n',
-                        required=False,
-                        default="ntlk")
+                        help='the mode of summarization\n -pegasus\n -nltk\n -sumy\n',
+                        required=True,
+                        default="nltk")
 
     args = parser.parse_args()
 
-    if args.mode == "ntlk":
+    if args.mode == "nltk":
         summarizer_NTLK = nltk_summarizer.PDFSummarizer(args.file)
         summarizer_NTLK.summarize()
         summarizer_NTLK.export(args.output)
