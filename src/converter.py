@@ -1,6 +1,6 @@
 import os
 import pypdf
-
+import re
 
 class PDFToTextConverter:
     """
@@ -26,8 +26,10 @@ class PDFToTextConverter:
     def _read_file(self, filename: str) -> str:
         self._validate_file(filename)
         with open(filename, mode="rb") as f:
-            reader = pypdf.PdfReader(f)
-            writer = pypdf.PdfWriter(clone_from=reader)
-            writer.remove_annotations(subtypes=None)
+            writer = pypdf.PdfWriter(clone_from=f)
         return " ".join(page.extract_text().replace("-", "")
                        for page in writer.pages)
+
+    def export(self, filename: str) -> None:
+        with open(filename, mode="w", encoding="utf-8") as f:
+            f.write(self.text)

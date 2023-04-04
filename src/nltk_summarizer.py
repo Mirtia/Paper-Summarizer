@@ -1,3 +1,4 @@
+import re
 from concurrent.futures import ThreadPoolExecutor
 from itertools import islice
 
@@ -31,8 +32,18 @@ class PDFSummarizer(PDFToTextConverter):
         super().__init__(filename)
         self._download()
         self.stop_words = set(stopwords.words("english"))
+        self.text = self._sanitize(self.text)
+        self.custom_stop_words = self._import_stop_words()
         self.chunks = PDFSummarizer.split_text(self.text, self.CHUNK_SIZE)
-        self.summarizer = pipeline(task="summarization", model="sshleifer/distilbart-cnn-12-6")
+        self.summarizer = pipeline(task="summarization",
+                                   model="sshleifer/distilbart-cnn-12-6")
+
+    def _import_stop_words(self, filename=None):
+        pass
+
+    def _sanitize(self, text):
+        return re.sub(r"\[\d+\]", "",
+                      re.sub(r"http\S+", "", text, flags=re.MULTILINE))
 
     def _download(self) -> None:
         nltk.download("punkt")
@@ -47,7 +58,8 @@ class PDFSummarizer(PDFToTextConverter):
             text[i:i + chunk_size] for i in range(0, len(text), chunk_size)
         ]
 
-    def process_concurrently(self, tokens: list, num_threads: int, operation) -> None:
+    def process_concurrently(self, tokens: list, num_threads: int,
+                             operation) -> None:
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
             futures = []
             for i in range(num_threads):
@@ -59,7 +71,8 @@ class PDFSummarizer(PDFToTextConverter):
             ]
 
     @staticmethod
-    def tokenize_lines(chunks: list) -> list:
+    def tokenize_sentences(chunks: list) -> list:
+        # Remove sentences with Fig or Figure, Table, Tab
         return [token for chunk in chunks for token in sent_tokenize(chunk)]
 
     @staticmethod
@@ -67,7 +80,7 @@ class PDFSummarizer(PDFToTextConverter):
         return [token for chunk in chunks for token in word_tokenize(chunk)]
 
     @staticmethod
-    def filter_lines(chunks: list) -> list:
+    def filter_sentences(chunks: list) -> list:
         return [line for line in chunks if len(line) > 1]
 
     def filter_words(self, chunks: list) -> list:
@@ -78,7 +91,9 @@ class PDFSummarizer(PDFToTextConverter):
 
     def summarize(self, quiet=False) -> None:
         self.sentences = self.process_concurrently(
-            self.chunks, num_threads=4, operation=PDFSummarizer.tokenize_lines)
+            self.chunks,
+            num_threads=4,
+            operation=PDFSummarizer.tokenize_sentences)
         self.words = self.process_concurrently(
             self.sentences,
             num_threads=4,
@@ -87,7 +102,7 @@ class PDFSummarizer(PDFToTextConverter):
         self.filtered_sentences = self.process_concurrently(
             self.sentences,
             num_threads=4,
-            operation=PDFSummarizer.filter_lines)
+            operation=PDFSummarizer.filter_sentences)
         self.filtered_words = self.process_concurrently(
             self.words, num_threads=4, operation=self.filter_words)
 
@@ -118,13 +133,16 @@ class PDFSummarizer(PDFToTextConverter):
                        reverse=True)[:self.NUM_SENTENCES]), self.CHUNK_SIZE)
 
         self.summary = ""
-        for i, chunk in enumerate(raw_summary_chunks):
-            if not quiet:
-                print(f"Processing chunk {i + 1}/{len(raw_summary_chunks)}...")
-            self.summary += self.summarizer(chunk,
-                                            max_length=self.MAX_LENGTH,
-                                            min_length=self.MIN_LENGTH,
-                                            do_sample=True)[0]['summary_text']
+        with ThreadPoolExecutor() as executor:
+            futures = list(
+                executor.map(self._summarize_chunk, raw_summary_chunks))
+            self.summary = "".join(futures)
+
+    def _summarize_chunk(self, chunk) -> str:
+        return self.summarizer(chunk,
+                               max_length=self.MAX_LENGTH,
+                               min_length=self.MIN_LENGTH,
+                               do_sample=True)[0]["summary_text"]
 
     def export(self, filename: str) -> None:
         with open(filename, mode="w", encoding="utf-8") as f:
