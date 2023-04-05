@@ -15,10 +15,9 @@ class PDFSummarizer(PDFToTextConverter):
     Attributes:
     - LANGUAGE (str): The language to use for summarization. Default is "english".
     - NUM_SENTENCES (int): The number of sentences to include in the summary. Default is 20.
-
+    """
     LANGUAGE = "english"
     NUM_SENTENCES = 20
-    """
 
     def __init__(self, filename) -> None:
         super().__init__(filename)
