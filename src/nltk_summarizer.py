@@ -1,10 +1,11 @@
 import re
+from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 from itertools import islice
-import wordninja
-import enchant
 
+import enchant
 import nltk
+import wordninja
 from nltk import FreqDist
 from nltk.corpus import stopwords
 from nltk.tokenize import sent_tokenize, word_tokenize
@@ -36,6 +37,7 @@ class PDFSummarizer(PDFToTextConverter):
         self.stop_words = set(stopwords.words("english"))
         self.text = self._sanitize(self.text)
         self.chunks = PDFSummarizer.split_text(self.text, self.CHUNK_SIZE)
+        self.summary = ""
         self.summarizer = pipeline(task="summarization",
                                    model="sshleifer/distilbart-cnn-12-6")
 
@@ -116,7 +118,7 @@ class PDFSummarizer(PDFToTextConverter):
 
         frequency_table = FreqDist(self.filtered_words)
 
-        scores = {}
+        scores = OrderedDict()
         for sentence in self.filtered_sentences:
             sentence_words = word_tokenize(sentence.lower())
             sentence_score = sum([
@@ -126,10 +128,12 @@ class PDFSummarizer(PDFToTextConverter):
             scores[sentence] = sentence_score
 
         self.CHUNK_SIZE = 1024
+
         raw_summary_chunks = PDFSummarizer.split_text(
-            "".join(
-                sorted(scores, key=scores.get,
-                       reverse=True)[:self.NUM_SENTENCES]), self.CHUNK_SIZE)
+            "".join([
+                sentence for sentence in scores.keys() if sentence in sorted(
+                    scores, key=scores.get, reverse=True)[:self.NUM_SENTENCES]
+            ]), self.CHUNK_SIZE)
 
         with ThreadPoolExecutor() as executor:
             futures = list(
