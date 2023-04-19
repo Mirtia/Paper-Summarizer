@@ -11,6 +11,8 @@ class PDFToTextConverter:
         filename (str): The path to the .pdf file.
         text (str): The content of the .pdf file.
     """
+    email_pattern = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
+    url_pattern = r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
 
     def __init__(self, filename: str) -> None:
         self.filename = self._validate_file(filename)
@@ -30,9 +32,17 @@ class PDFToTextConverter:
             reader = pypdf.PdfReader(f)
             writer = pypdf.PdfWriter(clone_from=reader)
             writer.remove_annotations(subtypes=None)
+        return self._remove_noise(" ".join(page.extract_text()
+                                  for page in writer.pages))
 
-        return " ".join(page.extract_text().replace("-", "")
-                        for page in writer.pages)
+    def _remove_noise(self, text):
+        index = text.lower().rfind("references") or text.lower().rfind(
+            "bibliography")
+        if (index != -1):
+            text = text[:index]
+        text = re.sub(self.url_pattern, "", re.sub(self.email_pattern, "",
+                                                   text))
+        return text.replace("-", "")
 
     def export(self, filename: str) -> None:
         with open(filename, mode="w", encoding="utf-8") as f:

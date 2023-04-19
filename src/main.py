@@ -1,5 +1,6 @@
 import argparse
 import nltk_summarizer
+import converter
 import transformers_summarizer
 import sumy_summarizer
 
@@ -25,9 +26,11 @@ def main():
     args = parser.parse_args()
 
     if args.mode == "nltk":
-        summarizer_NTLK = nltk_summarizer.PDFSummarizer(args.file)
-        summarizer_NTLK.summarize()
-        summarizer_NTLK.export(args.output)
+        summarizer_text = converter.PDFToTextConverter(args.file)
+        summarizer_text.export(args.output)
+        # summarizer_NTLK = nltk_summarizer.PDFSummarizer(args.file)
+        # summarizer_NTLK.summarize()
+        # summarizer_NTLK.export(args.output)
     elif args.mode == "pegasus":
         summarizer_pegasus = transformers_summarizer.PDFSummarizer(args.file)
         summarizer_pegasus.summarize()
